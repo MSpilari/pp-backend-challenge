@@ -11,8 +11,14 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 
 @Configuration
 @EnableWebSecurity
@@ -36,6 +42,15 @@ public class SecurityConfig {
                 .oauth2ResourceServer(config -> config.jwt(jwt -> jwt.decoder(jwtDecoder())));
 
         return http.build();
+    }
+
+    @Bean
+    JwtEncoder jwtEncoder() {
+        var jwk = new RSAKey.Builder(this.publicKey).privateKey(this.privateKey).build();
+
+        var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
+
+        return new NimbusJwtEncoder(jwks);
     }
 
     @Bean
