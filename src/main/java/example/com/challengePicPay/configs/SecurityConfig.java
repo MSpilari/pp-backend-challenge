@@ -32,7 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, "/client/signin").permitAll()
                         .requestMatchers(HttpMethod.POST, "/shopkeeper/signin").permitAll()
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
-                        .anyRequest().authenticated());
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(config -> config.jwt(jwt -> jwt.decoder(jwtDecoder())));
 
         return http.build();
     }
