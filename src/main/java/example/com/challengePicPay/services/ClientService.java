@@ -55,4 +55,50 @@ public class ClientService {
 
         return Map.of("message", "Deposit made successfully");
     }
+
+    public Map<String, Object> transfer(String email, TransferDTO info) {
+
+        var sender = this.clientRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Email not found"));
+
+        if (sender.getWallet().compareTo(new BigDecimal(info.value())) == -1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient Balance");
+
+        if (sender.getCpf().equals(info.cpf()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Failed ! To deposit value in your account, use the deposit method.");
+
+        if (info.cpf() != null && info.cnpj() == null) {
+            var receiver = this.clientRepository.findByCpf(info.cpf())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CPF not found"));
+
+            receiver.setWallet(receiver.getWallet().add(new BigDecimal(info.value())));
+            sender.setWallet(sender.getWallet().subtract(new BigDecimal(info.value())));
+
+            this.clientRepository.save(receiver);
+            this.clientRepository.save(sender);
+
+            return Map.of("sender_id", sender.getId(), "sender_email", sender.getEmail(), "sender_value", info.value(),
+                    "receiver_id", receiver.getId(), "receiver_email", receiver.getEmail());
+        }
+
+        if (info.cnpj() != null && info.cpf() == null) {
+            var receiver = this.shopkeeperRepository.findByCnpj(info.cnpj())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CNPJ not found"));
+
+            receiver.setWallet(receiver.getWallet().add(new BigDecimal(info.value())));
+            sender.setWallet(sender.getWallet().subtract(new BigDecimal(info.value())));
+
+            this.shopkeeperRepository.save(receiver);
+            this.clientRepository.save(sender);
+
+            return Map.of("sender_id", sender.getId(), "sender_email", sender.getEmail(), "sender_value", info.value(),
+                    "receiver_id", receiver.getId(), "receiver_email", receiver.getEmail());
+        }
+
+        else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insert one CNPJ or CPF valid.");
+        }
+
+    }
 }
