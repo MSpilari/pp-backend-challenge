@@ -43,4 +43,12 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(message);
     }
 
+    @PostMapping("/transfer")
+    @PreAuthorize("hasAuthority('SCOPE_client')")
+    public ResponseEntity<Map<String, Object>> transfer(@RequestBody TransferDTO info, JwtAuthenticationToken token) {
+        var receipt = this.clientService.transfer(token.getToken().getSubject(), info);
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(receipt);
+    }
+
 }
