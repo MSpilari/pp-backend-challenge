@@ -12,4 +12,6 @@ public interface ShopkeeperRepository extends JpaRepository<ShopkeeperEntity, Lo
     Optional<ShopkeeperEntity> findByEmail(String email);
 
     Optional<ShopkeeperEntity> findByEmailOrCnpj(String email, String cnpj);
+
+    Optional<ShopkeeperEntity> findByCnpj(String cnpj);
 }
