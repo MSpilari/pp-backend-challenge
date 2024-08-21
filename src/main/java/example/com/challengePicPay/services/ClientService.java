@@ -61,16 +61,20 @@ public class ClientService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Email not found"));
     }
 
-    public Map<String, Object> transfer(String email, TransferDTO info) {
-
-        var sender = this.findClientByEmail(email);
-
-        if (sender.getWallet().compareTo(new BigDecimal(info.value())) == -1)
+    private void validateTransfer(ClientEntity sender, TransferDTO info) {
+        if (sender.getWallet().compareTo(new BigDecimal(info.value())) < 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient Balance");
 
         if (sender.getCpf().equals(info.cpf()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Failed ! To deposit value in your account, use the deposit method.");
+    }
+
+    public Map<String, Object> transfer(String email, TransferDTO info) {
+
+        var sender = this.findClientByEmail(email);
+
+        this.validateTransfer(sender, info);
 
         if (info.cpf() != null && info.cnpj() == null) {
             var receiver = this.clientRepository.findByCpf(info.cpf())
