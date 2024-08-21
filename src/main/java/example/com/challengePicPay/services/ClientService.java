@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import example.com.challengePicPay.controllers.dto.TransferDTO;
 import example.com.challengePicPay.entities.ClientEntity;
+import example.com.challengePicPay.entities.ShopkeeperEntity;
+import example.com.challengePicPay.entities.UserEntity;
 import example.com.challengePicPay.repositories.ClientRepository;
 import example.com.challengePicPay.repositories.ShopkeeperRepository;
 
@@ -70,43 +72,46 @@ public class ClientService {
                     "Failed ! To deposit value in your account, use the deposit method.");
     }
 
+    private UserEntity findReceiver(TransferDTO info) {
+        if (info.cpf() != null && info.cnpj() == null)
+            return this.clientRepository.findByCpf(info.cpf())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CPF not found"));
+
+        else if (info.cnpj() != null && info.cpf() == null)
+            return this.shopkeeperRepository.findByCnpj(info.cnpj())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CNPJ not found"));
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insert a valid CNPJ or CPF.");
+    }
+
+    private void performTransfer(ClientEntity sender, UserEntity receiver, TransferDTO info) {
+
+        var amount = new BigDecimal(info.value());
+
+        receiver.setWallet(receiver.getWallet().add(amount));
+        sender.setWallet(sender.getWallet().subtract(amount));
+
+        this.clientRepository.save(sender);
+
+        if (receiver instanceof ClientEntity)
+            this.clientRepository.save((ClientEntity) receiver);
+        else if (receiver instanceof ShopkeeperEntity)
+            this.shopkeeperRepository.save((ShopkeeperEntity) receiver);
+
+    }
+
     public Map<String, Object> transfer(String email, TransferDTO info) {
 
         var sender = this.findClientByEmail(email);
 
         this.validateTransfer(sender, info);
 
-        if (info.cpf() != null && info.cnpj() == null) {
-            var receiver = this.clientRepository.findByCpf(info.cpf())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CPF not found"));
+        var receiver = this.findReceiver(info);
 
-            receiver.setWallet(receiver.getWallet().add(new BigDecimal(info.value())));
-            sender.setWallet(sender.getWallet().subtract(new BigDecimal(info.value())));
+        this.performTransfer(sender, receiver, info);
 
-            this.clientRepository.save(receiver);
-            this.clientRepository.save(sender);
-
-            return Map.of("sender_id", sender.getId(), "sender_email", sender.getEmail(), "sender_value", info.value(),
-                    "receiver_id", receiver.getId(), "receiver_email", receiver.getEmail());
-        }
-
-        if (info.cnpj() != null && info.cpf() == null) {
-            var receiver = this.shopkeeperRepository.findByCnpj(info.cnpj())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver CNPJ not found"));
-
-            receiver.setWallet(receiver.getWallet().add(new BigDecimal(info.value())));
-            sender.setWallet(sender.getWallet().subtract(new BigDecimal(info.value())));
-
-            this.shopkeeperRepository.save(receiver);
-            this.clientRepository.save(sender);
-
-            return Map.of("sender_id", sender.getId(), "sender_email", sender.getEmail(), "sender_value", info.value(),
-                    "receiver_id", receiver.getId(), "receiver_email", receiver.getEmail());
-        }
-
-        else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insert one CNPJ or CPF valid.");
-        }
-
+        return Map.of("sender_id", sender.getId(), "sender_email", sender.getEmail(),
+                "sender_value", info.value(),
+                "receiver_id", receiver.getId(), "receiver_email", receiver.getEmail());
     }
 }
