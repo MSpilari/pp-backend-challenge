@@ -56,10 +56,14 @@ public class ClientService {
         return Map.of("message", "Deposit made successfully");
     }
 
+    private ClientEntity findClientByEmail(String email) {
+        return this.clientRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Email not found"));
+    }
+
     public Map<String, Object> transfer(String email, TransferDTO info) {
 
-        var sender = this.clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Email not found"));
+        var sender = this.findClientByEmail(email);
 
         if (sender.getWallet().compareTo(new BigDecimal(info.value())) == -1)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient Balance");
