@@ -49,8 +49,7 @@ public class ClientService {
     }
 
     public Map<String, String> deposit(String value, JwtAuthenticationToken token) {
-        var receiver = this.clientRepository.findByEmail(token.getToken().getSubject())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Receiver Email not found"));
+        var receiver = this.findClientByEmail(token.getToken().getSubject());
 
         receiver.setWallet(receiver.getWallet().add(new BigDecimal(value)));
 
