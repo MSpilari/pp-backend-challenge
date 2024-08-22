@@ -61,7 +61,7 @@ public class ClientService {
 
     private ClientEntity findClientByEmail(String email) {
         return this.clientRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Email not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email not found"));
     }
 
     private void validateTransfer(ClientEntity sender, TransferDTO info) {
