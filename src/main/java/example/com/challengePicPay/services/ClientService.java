@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import example.com.challengePicPay.controllers.dto.TransferDTO;
@@ -100,6 +101,7 @@ public class ClientService {
 
     }
 
+    @Transactional
     public Map<String, Object> transfer(String email, TransferDTO info) {
 
         var sender = this.findClientByEmail(email);
